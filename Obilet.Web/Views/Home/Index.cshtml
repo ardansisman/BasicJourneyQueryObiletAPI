@@ -1,0 +1,81 @@
+﻿@model TripModel
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="card card-secondary">
+    <div class="card-header bg-white text-center">
+        <h3 class="card-title">Otobüs Bileti Ara</h3>
+
+    </div>
+    <!-- /.card-header -->
+    <!-- form start -->
+    <form action="/" method="post">
+        <div class="card-body text-center">
+            <div class="card-header bg-white ">
+                
+
+                    <label class="myLabel">Nereden</label> <br />
+                    <select class='select2' asp-for="OriginId" id="origin">
+
+                        @foreach (var busLocation in Model.BusLocations.Data)
+                        {
+                            <option value="@busLocation.Id">@busLocation.Name</option>
+                        }
+
+
+                    </select>
+
+                    <a href="#" id="swap" class="nav-link">
+                        <img src="~/lib/icons/arrow-down-up.svg" />
+
+                    </a>
+
+
+                    <label class="myLabel">Nereye</label> <br />
+                    <select class='select2' asp-for="DestinationId" id="destination">
+
+                        @foreach (var busLocation in Model.BusLocations.Data)
+                        {
+                            <option value="@busLocation.Id">@busLocation.Name</option>
+                        }
+
+
+                    </select> 
+                
+            </div>
+            <div class="card-body text-center">
+                <div class="card-header bg-white ">
+                    <label class="myLabel"> Tarih</label><br />
+                    <input type="date" id="departureDate" asp-for="DepartureDate" value="" /> <br /><br />
+
+                    <a href="#" id="todayBtn" class="btn btn-outline-dark">Bugün</a>
+                    <a href="#" id="tomorrowBtn" class="btn btn-outline-info">Yarın</a>
+                   
+
+
+
+                </div>
+                <button type="submit" class="btn btn-outline-success mt-5">Bileti Bul</button>
+            </div>
+
+        </div>
+
+
+
+    </form>
+</div>
+
+<script>
+
+</script>
+
+
+
+
+
+
+
+
+
+
