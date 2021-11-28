@@ -41,9 +41,28 @@ namespace Obilet.Web.Controllers
             var userResult = _redisCacheService.Get<UserModel>(cacheKeyUser);
 
             GetBusLocationResponseModel busLocationResponse = new();
-            if (userResult == null) // rediste user yoksa GetSession çalışıyor
+
+            if (userResult != null)
+            {
+                busLocationResponse = _obiletService.GetBusLocation(new GetBusLocationRequestModel { Language = "tr-TR", DeviceSession = new DeviceSession { DeviceId = userResult.DeviceId, SessionId = userResult.SessionId }, Date = DateTimeOffset.Now });
+
+                if (busLocationResponse.Status.ToLower() == "success")
+                {
+                    return View(new TripModel { BusLocations = busLocationResponse, LastSearchModel = new LastSearchModel { LastOriginId = userResult.LastSearchModel.LastOriginId, LastDestinationId = userResult.LastSearchModel.LastDestinationId, LastDepartureDate = userResult.LastSearchModel.LastDepartureDate } });
+                    
+                }
+                else
+                {
+                    TempData["message"] = "BusLocation error";
+                    return View(new TripModel { BusLocations = new GetBusLocationResponseModel(), LastSearchModel = new LastSearchModel() });
+                }
+
+               
+            }
+            else
             {
                 var response = _obiletService.GetSession(new GetSessionRequestModel { Connection = new Connection { IpAddress = ip, Port = 5117 }, Browser = new Browser { Name = "Chrome", Version = "47.0.0.12" }, Type = 1 });
+
                 if (response.Status.ToLower() == "success")
                 {
                     var user = new UserModel { Ip = ip, SessionId = response.Data.SessionId, DeviceId = response.Data.DeviceId };
@@ -51,25 +70,45 @@ namespace Obilet.Web.Controllers
                 }
                 else
                 {
+                    TempData["message"] = "GetSession error";
                     //Obilet Apiden Session alırken hata oluştu
                 }
 
-              busLocationResponse=  _obiletService.GetBusLocation(new GetBusLocationRequestModel { Language = "tr-TR", DeviceSession = new DeviceSession { DeviceId = response.Data.DeviceId, SessionId = response.Data.SessionId }, Date = DateTimeOffset.Now });
-                if (busLocationResponse.Status.ToLower()=="success")
-                {
-                    //buslocation çekilirken hata oluştu
-                }
-            }
-            else
-            {
-                busLocationResponse = _obiletService.GetBusLocation(new GetBusLocationRequestModel { Language = "tr-TR", DeviceSession = new DeviceSession { DeviceId = userResult.DeviceId, SessionId = userResult.SessionId }, Date = DateTimeOffset.Now });
+                busLocationResponse = _obiletService.GetBusLocation(new GetBusLocationRequestModel { Language = "tr-TR", DeviceSession = new DeviceSession { DeviceId = response.Data.DeviceId, SessionId = response.Data.SessionId }, Date = DateTimeOffset.Now });
                 if (busLocationResponse.Status.ToLower() == "success")
                 {
+                    return View(new TripModel { BusLocations = busLocationResponse, LastSearchModel = new LastSearchModel() });
+                   
+                }
+                else
+                {
+                    TempData["message"] = "BusLocation error";
+                    return View(new TripModel { BusLocations = new GetBusLocationResponseModel(), LastSearchModel = new LastSearchModel() });
                     //buslocation çekilirken hata oluştu
                 }
+                
             }
-           
-            return View(new TripModel {BusLocations=busLocationResponse });
+
+
+        }
+
+        [HttpPost]
+        public IActionResult GetBusJourney(TripModel data)
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress.ToString();
+
+            var cacheKeyUser = string.Format(User, ip);
+
+            var userResult = _redisCacheService.Get<UserModel>(cacheKeyUser);
+            _redisCacheService.Remove(cacheKeyUser);
+            var user = new UserModel { Ip = ip, SessionId = userResult.SessionId, DeviceId = userResult.DeviceId, LastSearchModel = new LastSearchModel { LastOriginId = data.OriginId, LastDestinationId = data.DestinationId, LastDepartureDate = data.DepartureDate } };
+            _redisCacheService.Set(cacheKeyUser, user);
+
+
+
+
+
+            return null;
         }
 
         public IActionResult Privacy()

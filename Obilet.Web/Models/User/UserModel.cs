@@ -12,11 +12,13 @@ namespace Obilet.Web.Models.User
             Ip = default;
             SessionId = default;
             DeviceId = default;
-            
+            LastSearchModel = new();
         }
         public string Ip { get; set; }
         public string SessionId { get; set; }
         public string DeviceId { get; set; }
+        public LastSearchModel LastSearchModel { get; set; }
+      
 
     }
 }
