@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Obilet.Web.Models;
+using Obilet.Web.Models.Journey;
 using Obilet.Web.Models.ObiletApiModels.Request.Common;
+using Obilet.Web.Models.ObiletApiModels.Request.GetBusJourney;
 using Obilet.Web.Models.ObiletApiModels.Request.GetBusLocation;
 using Obilet.Web.Models.ObiletApiModels.Request.GetSession;
 using Obilet.Web.Models.ObiletApiModels.Response.GetBusLocation;
@@ -25,6 +27,7 @@ namespace Obilet.Web.Controllers
         private readonly IObiletService _obiletService;
 
         public const string User = "User:{0}";
+        public const string BusLocations = "BusLocations";
 
         public HomeController(ILogger<HomeController> logger, IRedisCacheService redisCacheService, IObiletService obiletService)
         {
@@ -48,16 +51,15 @@ namespace Obilet.Web.Controllers
 
                 if (busLocationResponse.Status.ToLower() == "success")
                 {
+                    var cacheKeyBusLocations = string.Format(BusLocations);
+                    _redisCacheService.Set(cacheKeyBusLocations, busLocationResponse);
                     return View(new TripModel { BusLocations = busLocationResponse, LastSearchModel = new LastSearchModel { LastOriginId = userResult.LastSearchModel.LastOriginId, LastDestinationId = userResult.LastSearchModel.LastDestinationId, LastDepartureDate = userResult.LastSearchModel.LastDepartureDate } });
-                    
                 }
                 else
                 {
                     TempData["message"] = "BusLocation error";
                     return View(new TripModel { BusLocations = new GetBusLocationResponseModel(), LastSearchModel = new LastSearchModel() });
                 }
-
-               
             }
             else
             {
@@ -65,6 +67,8 @@ namespace Obilet.Web.Controllers
 
                 if (response.Status.ToLower() == "success")
                 {
+                    var cacheKeyBusLocations = string.Format(BusLocations);
+                    _redisCacheService.Set(cacheKeyBusLocations, busLocationResponse);
                     var user = new UserModel { Ip = ip, SessionId = response.Data.SessionId, DeviceId = response.Data.DeviceId };
                     _redisCacheService.Set(cacheKeyUser, user);
                 }
@@ -78,7 +82,7 @@ namespace Obilet.Web.Controllers
                 if (busLocationResponse.Status.ToLower() == "success")
                 {
                     return View(new TripModel { BusLocations = busLocationResponse, LastSearchModel = new LastSearchModel() });
-                   
+
                 }
                 else
                 {
@@ -86,7 +90,7 @@ namespace Obilet.Web.Controllers
                     return View(new TripModel { BusLocations = new GetBusLocationResponseModel(), LastSearchModel = new LastSearchModel() });
                     //buslocation çekilirken hata oluştu
                 }
-                
+
             }
 
 
@@ -95,6 +99,16 @@ namespace Obilet.Web.Controllers
         [HttpPost]
         public IActionResult GetBusJourney(TripModel data)
         {
+            if (data.OriginId==data.DestinationId)
+            {
+                TempData["message"] = "Kalkış ve varış yerleri farklı olmalıdır.";
+                return RedirectToAction("Index");
+            }
+            if (data.DepartureDate<DateTimeOffset.Now)
+            {
+                TempData["message"] = "Tarih seçimi bugün veya bugünden sonra olmalıdır.";
+                return RedirectToAction("Index");
+            }
             var ip = HttpContext.Connection.RemoteIpAddress.ToString();
 
             var cacheKeyUser = string.Format(User, ip);
@@ -103,17 +117,22 @@ namespace Obilet.Web.Controllers
             _redisCacheService.Remove(cacheKeyUser);
             var user = new UserModel { Ip = ip, SessionId = userResult.SessionId, DeviceId = userResult.DeviceId, LastSearchModel = new LastSearchModel { LastOriginId = data.OriginId, LastDestinationId = data.DestinationId, LastDepartureDate = data.DepartureDate } };
             _redisCacheService.Set(cacheKeyUser, user);
+            
+            var cacheKeyBusLocations = string.Format(BusLocations);
+            var busLocations = _redisCacheService.Get<GetBusLocationResponseModel>(cacheKeyBusLocations);
+            
+            var journeysResponse = _obiletService.GetJourney(new GetBusJourneyRequestModel { DeviceSession = new DeviceSession { DeviceId = userResult.DeviceId, SessionId = userResult.SessionId }, Data = new Data { OriginId = data.OriginId, DestinationId = data.DestinationId, DepartureDate = data.DepartureDate }, Language = "tr-TR", Date = data.DepartureDate.ToString("yyyy-MM-dd") });
+            if (journeysResponse.Status.ToLower()=="success")
+            {
+                return View("Journeys",new JoruneyModel { JourneyResponseModel = journeysResponse, OriginName = busLocations.Data.Where(x => x.Id == data.OriginId).FirstOrDefault().Name, DestinationName = busLocations.Data.Where(x => x.Id == data.DestinationId).FirstOrDefault().Name, DeperatureDate = data.DepartureDate.ToString("dd.MM.yyyy dddd")});
+            }
+            else
+            {
+                TempData["message"] = "Seferler getirilirken hata oluştu";
+                return RedirectToAction("Index");
+            }
 
 
-
-
-
-            return null;
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

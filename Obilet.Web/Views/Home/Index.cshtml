@@ -13,8 +13,6 @@
     <form action="Home/GetBusJourney" method="post">
         <div class="card-body text-center">
             <div class="card-header bg-white ">
-
-
                 <label class="myLabel">Nereden</label> <br />
                 <select class='select2' asp-for="OriginId" id="origin">
 
@@ -60,7 +58,7 @@
                 </select>
 
             </div>
-            <div class="card-body text-center">
+
                 <div class="card-header bg-white ">
                     <input type="hidden" name="name" id="LastDepartureDate" value="@Model.LastSearchModel.LastDepartureDate.ToString("yyyy-MM-dd")" />
                     <label class="myLabel"> Tarih</label><br />
@@ -77,30 +75,19 @@
                     <a href="#" id="todayBtn" class="btn btn-outline-dark">Bugün</a>
                     <a href="#" id="tomorrowBtn" class="btn btn-outline-info">Yarın</a>
 
-
-
-
                 </div>
                 <button type="submit" id="FindTicket" class="btn btn-outline-success mt-5">Bileti Bul</button>
-            </div>
-
+          
         </div>
 
     </form>
 </div>
+<script src="~/lib/jquery/dist/jquery.js"></script>
 @if (TempData["message"] != null)
 {
     <script>
     $(document).ready(function () {
-
-        @*var url = "";
-        if ("@TempData["Status"]" == "success") {
-            url="@Url.Action("Index", "Product")";
-        } else {
-            url="@Url.Action("Create", "Product")";
-
-        }*@
-            SweetAlert('error', '', '@TempData["message"]', 'Tamam');
+         SweetAlert('error', '', '@TempData["message"]', 'Tamam');
         });
 
     </script>

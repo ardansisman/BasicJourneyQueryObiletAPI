@@ -1,0 +1,56 @@
+﻿@model JoruneyModel
+
+<head>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />
+    <link href="~/lib/bootstrap/dist/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+</head>
+<div class="card card-secondary">
+    <div class="card-header text-center">
+
+
+        <div class="card text-white bg-primary mb-3" style="max-width: 18rem;">
+            <div class="card-header">Header</div>
+            <div class="card-body">
+                <h5 class="card-title">@Model.OriginName-@Model.DestinationName</h5>
+                <p class="card-text">@Model.DeperatureDate</p>
+            </div>
+        </div>
+
+
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-hover table-sm dataTable" width="100%" cellspacing="0">
+            <thead>
+                <tr>
+
+                    <th class="text-center"></th>
+
+
+                </tr>
+            </thead>
+            @if (Model.JourneyResponseModel.Data.Length > 0)
+            {
+                <tbody>
+
+                    @foreach (var journey in Model.JourneyResponseModel.Data)
+                    {
+                        <tr id="@journey.Id">
+                            <td class="text-center">
+
+                                <div id="commands">
+                                    <a style="cursor: pointer;">
+                                        @journey.Journey.Stops.First().Name-@journey.Journey.Stops.Last().Name
+                                    </a>
+                                </div>
+
+
+
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+            }
+        </table>
+    </div>
+</div>
