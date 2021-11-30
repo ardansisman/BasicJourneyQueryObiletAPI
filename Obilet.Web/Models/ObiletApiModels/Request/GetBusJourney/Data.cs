@@ -11,7 +11,8 @@ namespace Obilet.Web.Models.ObiletApiModels.Request.GetBusJourney
         [JsonProperty("destination-id")]
         public long DestinationId { get; set; }
 
-        [JsonProperty("departure-date")]
         public DateTimeOffset DepartureDate { get; set; }
+        [JsonProperty("departure-date")]
+        public string DepartureDateStr { get; set; }
     }
 }

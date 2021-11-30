@@ -12,16 +12,13 @@ using Obilet.Web.Models.Trip;
 using Obilet.Web.Models.User;
 using Obilet.Web.Services.Abstract;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
 
 namespace Obilet.Web.Controllers
 {
     public class HomeController : Controller
     {
+        #region Dependency Injection
         private readonly ILogger<HomeController> _logger;
         private readonly IRedisCacheService _redisCacheService;
         private readonly IObiletService _obiletService;
@@ -35,18 +32,22 @@ namespace Obilet.Web.Controllers
             _redisCacheService = redisCacheService;
             _obiletService = obiletService;
         }
-
+        #endregion
         public IActionResult Index()
         {
+            #region User IP, RedisCache Info and Response Model Instance
             var ip = HttpContext.Connection.RemoteIpAddress.ToString();
 
             var cacheKeyUser = string.Format(User, ip);
             var userResult = _redisCacheService.Get<UserModel>(cacheKeyUser);
 
             GetBusLocationResponseModel busLocationResponse = new();
+            #endregion
 
+            #region In memory User 
             if (userResult != null)
             {
+                #region GetBusLocation Request
                 busLocationResponse = _obiletService.GetBusLocation(new GetBusLocationRequestModel { Language = "tr-TR", DeviceSession = new DeviceSession { DeviceId = userResult.DeviceId, SessionId = userResult.SessionId }, Date = DateTimeOffset.Now });
 
                 if (busLocationResponse.Status.ToLower() == "success")
@@ -57,12 +58,17 @@ namespace Obilet.Web.Controllers
                 }
                 else
                 {
-                    TempData["message"] = "BusLocation error";
+                    TempData["message"] = busLocationResponse.UserMessage;
                     return View(new TripModel { BusLocations = new GetBusLocationResponseModel(), LastSearchModel = new LastSearchModel() });
                 }
+                #endregion
             }
+            #endregion
+
+            #region Not in memory User
             else
             {
+                #region GetSession Request
                 var response = _obiletService.GetSession(new GetSessionRequestModel { Connection = new Connection { IpAddress = ip, Port = 5117 }, Browser = new Browser { Name = "Chrome", Version = "47.0.0.12" }, Type = 1 });
 
                 if (response.Status.ToLower() == "success")
@@ -74,10 +80,11 @@ namespace Obilet.Web.Controllers
                 }
                 else
                 {
-                    TempData["message"] = "GetSession error";
-                    //Obilet Apiden Session alırken hata oluştu
+                    TempData["message"] = response.UserMessage;
+                    return View(new TripModel { BusLocations = new GetBusLocationResponseModel(), LastSearchModel = new LastSearchModel() });
                 }
-
+                #endregion
+                #region GetBusLocation Request
                 busLocationResponse = _obiletService.GetBusLocation(new GetBusLocationRequestModel { Language = "tr-TR", DeviceSession = new DeviceSession { DeviceId = response.Data.DeviceId, SessionId = response.Data.SessionId }, Date = DateTimeOffset.Now });
                 if (busLocationResponse.Status.ToLower() == "success")
                 {
@@ -86,59 +93,64 @@ namespace Obilet.Web.Controllers
                 }
                 else
                 {
-                    TempData["message"] = "BusLocation error";
+                    TempData["message"] = busLocationResponse.UserMessage;
                     return View(new TripModel { BusLocations = new GetBusLocationResponseModel(), LastSearchModel = new LastSearchModel() });
-                    //buslocation çekilirken hata oluştu
+
                 }
-
+                #endregion
             }
-
+            #endregion
 
         }
 
         [HttpPost]
         public IActionResult GetBusJourney(TripModel data)
         {
-            if (data.OriginId==data.DestinationId)
+            #region Validation
+            if (data.OriginId == data.DestinationId)
             {
                 TempData["message"] = "Kalkış ve varış yerleri farklı olmalıdır.";
                 return RedirectToAction("Index");
             }
-            if (data.DepartureDate<DateTimeOffset.Now)
+            if (data.DepartureDate.DateTime < DateTimeOffset.Now.DateTime.Date)
             {
                 TempData["message"] = "Tarih seçimi bugün veya bugünden sonra olmalıdır.";
                 return RedirectToAction("Index");
             }
+            #endregion
+
+            #region Update UserInfo in Redis Cache
             var ip = HttpContext.Connection.RemoteIpAddress.ToString();
 
             var cacheKeyUser = string.Format(User, ip);
 
             var userResult = _redisCacheService.Get<UserModel>(cacheKeyUser);
             _redisCacheService.Remove(cacheKeyUser);
-            var user = new UserModel { Ip = ip, SessionId = userResult.SessionId, DeviceId = userResult.DeviceId, LastSearchModel = new LastSearchModel { LastOriginId = data.OriginId, LastDestinationId = data.DestinationId, LastDepartureDate = data.DepartureDate } };
+            var user = new UserModel { Ip = userResult.Ip, SessionId = userResult.SessionId, DeviceId = userResult.DeviceId, LastSearchModel = new LastSearchModel { LastOriginId = data.OriginId, LastDestinationId = data.DestinationId, LastDepartureDate = data.DepartureDate } };
             _redisCacheService.Set(cacheKeyUser, user);
-            
+            #endregion
+
+            #region Set BusLocation in Redis Cache
             var cacheKeyBusLocations = string.Format(BusLocations);
             var busLocations = _redisCacheService.Get<GetBusLocationResponseModel>(cacheKeyBusLocations);
-            
-            var journeysResponse = _obiletService.GetJourney(new GetBusJourneyRequestModel { DeviceSession = new DeviceSession { DeviceId = userResult.DeviceId, SessionId = userResult.SessionId }, Data = new Data { OriginId = data.OriginId, DestinationId = data.DestinationId, DepartureDate = data.DepartureDate }, Language = "tr-TR", Date = data.DepartureDate.ToString("yyyy-MM-dd") });
-            if (journeysResponse.Status.ToLower()=="success")
+            #endregion
+
+            #region GetJourney Request
+            var journeysResponse = _obiletService.GetJourney(new GetBusJourneyRequestModel { DeviceSession = new DeviceSession { DeviceId = userResult.DeviceId, SessionId = userResult.SessionId }, Data = new Data { OriginId = data.OriginId, DestinationId = data.DestinationId, DepartureDateStr = data.DepartureDate.DateTime.ToString("yyyy-MM-dd") }, Language = "tr-TR", Date = data.DepartureDate.ToString("yyyy-MM-dd") });
+            journeysResponse.Data = journeysResponse.Data.OrderBy(x => x.Journey.Departure).ToArray();
+
+            if (journeysResponse.Status.ToLower() == "success")
             {
-                return View("Journeys",new JoruneyModel { JourneyResponseModel = journeysResponse, OriginName = busLocations.Data.Where(x => x.Id == data.OriginId).FirstOrDefault().Name, DestinationName = busLocations.Data.Where(x => x.Id == data.DestinationId).FirstOrDefault().Name, DeperatureDate = data.DepartureDate.ToString("dd.MM.yyyy dddd")});
+                return View("Journeys", new JoruneyModel { JourneyResponseModel = journeysResponse, OriginName = busLocations.Data.Where(x => x.Id == data.OriginId).FirstOrDefault().Name, DestinationName = busLocations.Data.Where(x => x.Id == data.DestinationId).FirstOrDefault().Name, DeperatureDate = data.DepartureDate.ToString("dd MMMM dddd") });
             }
             else
             {
-                TempData["message"] = "Seferler getirilirken hata oluştu";
+                TempData["message"] = journeysResponse.UserMessage;
                 return RedirectToAction("Index");
             }
-
+            #endregion
 
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
     }
 }

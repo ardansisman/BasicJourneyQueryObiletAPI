@@ -1,19 +1,13 @@
 ﻿@model TripModel
-@{
-    ViewData["Title"] = "Home Page";
-}
 
 <div class="card card-secondary">
     <div class="card-header bg-white text-center">
         <h3 class="card-title">Otobüs Bileti Ara</h3>
-
     </div>
-    <!-- /.card-header -->
-    <!-- form start -->
     <form action="Home/GetBusJourney" method="post">
         <div class="card-body text-center">
             <div class="card-header bg-white ">
-                <label class="myLabel">Nereden</label> <br />
+                <label class="blueLabel">Nereden</label> <br />
                 <select class='select2' asp-for="OriginId" id="origin">
 
                     @foreach (var busLocation in Model.BusLocations.Data)
@@ -26,21 +20,13 @@
                         {
                             <option value="@busLocation.Id">@busLocation.Name</option>
                         }
-
                     }
-
-
                 </select>
-
                 <a href="#" id="swap" class="nav-link">
                     <img src="~/lib/icons/arrow-down-up.svg" />
-
                 </a>
-
-
-                <label class="myLabel">Nereye</label> <br />
+                <label class="blueLabel">Nereye</label> <br />
                 <select class='select2' asp-for="DestinationId" id="destination">
-
                     @foreach (var busLocation in Model.BusLocations.Data)
                     {
                         @if (Model.LastSearchModel.LastDestinationId == busLocation.Id)
@@ -51,37 +37,28 @@
                         {
                             <option value="@busLocation.Id">@busLocation.Name</option>
                         }
-
                     }
-
-
                 </select>
-
             </div>
-
-                <div class="card-header bg-white ">
-                    <input type="hidden" name="name" id="LastDepartureDate" value="@Model.LastSearchModel.LastDepartureDate.ToString("yyyy-MM-dd")" />
-                    <label class="myLabel"> Tarih</label><br />
-                    @if (Model.LastSearchModel.LastDepartureDate != new DateTimeOffset(DateTime.MinValue, TimeSpan.Zero))
-                    {
-                        <input type="date" id="departureDate" asp-for="DepartureDate" value="@Model.LastSearchModel.LastDepartureDate.ToString("yyyy-MM-dd")" /> <br /><br />
-                    }
-                    else
-                    {
-                        <input type="date" id="departureDate" asp-for="DepartureDate" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" /> <br /><br />
-                    }
-
-
-                    <a href="#" id="todayBtn" class="btn btn-outline-dark">Bugün</a>
-                    <a href="#" id="tomorrowBtn" class="btn btn-outline-info">Yarın</a>
-
-                </div>
-                <button type="submit" id="FindTicket" class="btn btn-outline-success mt-5">Bileti Bul</button>
-          
+            <div class="card-header bg-white ">
+                <input type="hidden" name="name" id="LastDepartureDate" value="@Model.LastSearchModel.LastDepartureDate.ToString("yyyy-MM-dd")" />
+                <label class="myLabel"> Tarih</label><br />
+                @if (Model.LastSearchModel.LastDepartureDate != new DateTimeOffset(DateTime.MinValue, TimeSpan.Zero))
+                {
+                    <input type="date" id="departureDate" asp-for="DepartureDate" value="@Model.LastSearchModel.LastDepartureDate.ToString("yyyy-MM-dd")" /> <br /><br />
+                }
+                else
+                {
+                    <input type="date" id="departureDate" asp-for="DepartureDate" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" /> <br /><br />
+                }
+                <a href="#" id="todayBtn" onclick="SetDate('@DateTime.Now.ToString("yyyy-MM-dd")')" class="btn btn-outline-dark">Bugün</a>
+                <a href="#" id="tomorrowBtn"  onclick="SetDate('@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")')" class="btn btn-outline-info">Yarın</a>
+            </div>
+            <button type="submit" id="FindTicket"  class="btn  mt-5" style="color:whitesmoke; background-color: #192289;">Bileti Bul</button>
         </div>
-
     </form>
 </div>
+
 <script src="~/lib/jquery/dist/jquery.js"></script>
 @if (TempData["message"] != null)
 {

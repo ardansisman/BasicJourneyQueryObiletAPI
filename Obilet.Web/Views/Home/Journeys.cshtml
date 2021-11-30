@@ -1,52 +1,59 @@
 ﻿@model JoruneyModel
 
-<head>
-    <link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />
-    <link href="~/lib/bootstrap/dist/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
-</head>
 <div class="card card-secondary">
-    <div class="card-header text-center">
-
-
-        <div class="card text-white bg-primary mb-3" style="max-width: 18rem;">
-            <div class="card-header">Header</div>
+    <div class="card-">
+        <div class="card text-white bg-primary mb-3">
             <div class="card-body">
-                <h5 class="card-title">@Model.OriginName-@Model.DestinationName</h5>
-                <p class="card-text">@Model.DeperatureDate</p>
+                
+               
+                <a href="@Url.Action("Index","Home")" class="backArrow">  <img src="~/lib/icons/arrow-left.svg" /></a>
+                    
+                  
+                
+                    <div class="text-center ml-2">
+                        <h5 class="card-title">@Model.OriginName-@Model.DestinationName</h5>
+                        <p class="card-text">@Model.DeperatureDate</p>
+                    </div>
+                   
+               
+                
             </div>
         </div>
-
-
     </div>
     <div class="card-body">
-        <table class="table table-bordered table-hover table-sm dataTable" width="100%" cellspacing="0">
+        <table class="table table-bordered table-hover table dataTable" style="border:hidden" cellspacing="0">
             <thead>
                 <tr>
-
                     <th class="text-center"></th>
-
-
                 </tr>
             </thead>
             @if (Model.JourneyResponseModel.Data.Length > 0)
             {
                 <tbody>
-
                     @foreach (var journey in Model.JourneyResponseModel.Data)
                     {
                         <tr id="@journey.Id">
-                            <td class="text-center">
-
-                                <div id="commands">
-                                    <a style="cursor: pointer;">
-                                        @journey.Journey.Stops.First().Name-@journey.Journey.Stops.Last().Name
-                                    </a>
+                            <td>
+                                <div class=" card text-black bg-white">
+                                    <div class="card-body ">
+                                        <div class="row ml-4">
+                                            <span class="blueLabel"><b>Kalkış </b></span>
+                                            <span class="blueLabel ml5"><b>Varış </b></span>
+                                            <button class="btn btn-danger btn-round px-5 price">@journey.Journey.InternetPrice TL</button>
+                                        </div>
+                                        <div class="row ml-4">
+                                            <span class="blueLabel"><b> @journey.Journey.Departure.ToString("t")</b></span>
+                                            <span class="blueLabel ml2"><b> →</b></span>
+                                            <span class="blueLabel ml2"><b> @journey.Journey.Arrival.ToString("t")</b></span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row ml-4">
+                                            <span class="blackLabel"><b> @journey.Journey.Origin-@journey.Journey.Destination</b></span>
+                                        </div>
+                                    </div>
                                 </div>
-
-
-
                             </td>
-
                         </tr>
                     }
                 </tbody>
@@ -54,3 +61,6 @@
         </table>
     </div>
 </div>
+
+
+
