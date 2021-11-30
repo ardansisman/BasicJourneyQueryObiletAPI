@@ -30,7 +30,7 @@ namespace Obilet.Web.Models.ObiletApiModels.Response.GetBusJourney
         public string Currency { get; set; }
 
         [JsonProperty("duration")]
-        public DateTimeOffset Duration { get; set; }
+        public string Duration { get; set; }
 
         [JsonProperty("original-price")]
         public long OriginalPrice { get; set; }
