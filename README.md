@@ -13,3 +13,6 @@ Kullanıcıların sefer arama verileri Redis Cache'e yazılarak bir sonraki ziya
 sisteminize uygun redis server kurulumunun yapılması gerekiyor. 
 
 Kullanıcı giriş yaptığında IP adresi ile yaptığı arama verileri redis cache'e yazılır, sonraki girişte ise cache'den çekilerek veriler set kullanıcı arayüzünde gösterilir.
+
+Redis Cache'e yazılan verileri görmek için ise Another Redis Desktop Manager arayüzünü yükleyebilirsiniz.
+
